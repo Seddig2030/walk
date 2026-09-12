@@ -43,24 +43,26 @@ jobs:
             cmake libffi-dev libssl-dev \
             libltdl-dev gettext
 
-      - name: Cache Buildozer global + project build dirs
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.buildozer
-            .buildozer
-          key: ${{ runner.os }}-buildozer-${{ hashFiles('buildozer.spec') }}
-          restore-keys: |
-            ${{ runner.os }}-buildozer-
-
       - name: Install Buildozer, Cython, and pinned python-for-android
         run: |
           python3 -m pip install --upgrade pip setuptools wheel
           python3 -m pip install "cython==0.29.33" buildozer "python-for-android==2024.1.21"
 
       - name: Build APK with Buildozer
+        shell: bash
         run: |
+          set -o pipefail
           yes | buildozer -v android debug 2>&1 | tee buildozer_full.log
+
+      - name: Verify an APK was actually produced
+        run: |
+          ls -la bin/ 2>/dev/null || true
+          if ! ls bin/*.apk 1> /dev/null 2>&1; then
+            echo "❌ buildozer reported success but no .apk exists in bin/ — treating this as a failed build."
+            exit 1
+          fi
+          echo "✅ Found APK:"
+          ls -la bin/*.apk
 
       # The GitHub UI truncates very long steps, which is why the actual
       # error at the end of the log wasn't visible in your screenshots.
@@ -80,4 +82,4 @@ jobs:
         with:
           name: WalkLearn-APK
           path: bin/*.apk
-          if-no-files-found: warn
+          if-no-files-found: error
