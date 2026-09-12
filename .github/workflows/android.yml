@@ -1,0 +1,83 @@
+name: Build WalkLearn APK
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Checkout project
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      # Ubuntu runners ship with a pre-installed Android SDK/NDK whose paths
+      # get exported as env vars. Buildozer/python-for-android then tries to
+      # reuse that SDK instead of the one it downloads itself, and version
+      # mismatches there are one of the most common causes of silent/late
+      # build failures in CI. We clear them so buildozer manages its own copy.
+      - name: Remove pre-installed Android SDK env vars
+        run: |
+          echo "ANDROID_HOME=" >> $GITHUB_ENV
+          echo "ANDROID_SDK_ROOT=" >> $GITHUB_ENV
+          echo "ANDROID_NDK_HOME=" >> $GITHUB_ENV
+          echo "ANDROID_NDK_ROOT=" >> $GITHUB_ENV
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            git zip unzip curl \
+            openjdk-17-jdk \
+            python3-pip python3-setuptools python3-dev \
+            build-essential \
+            autoconf automake libtool libtool-bin m4 pkg-config \
+            zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo5 \
+            cmake libffi-dev libssl-dev \
+            libltdl-dev gettext
+
+      - name: Cache Buildozer global + project build dirs
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.buildozer
+            .buildozer
+          key: ${{ runner.os }}-buildozer-${{ hashFiles('buildozer.spec') }}
+          restore-keys: |
+            ${{ runner.os }}-buildozer-
+
+      - name: Install Buildozer, Cython, and pinned python-for-android
+        run: |
+          python3 -m pip install --upgrade pip setuptools wheel
+          python3 -m pip install "cython==0.29.33" buildozer "python-for-android==2024.1.21"
+
+      - name: Build APK with Buildozer
+        run: |
+          yes | buildozer -v android debug 2>&1 | tee buildozer_full.log
+
+      # The GitHub UI truncates very long steps, which is why the actual
+      # error at the end of the log wasn't visible in your screenshots.
+      # This artifact keeps the whole thing so we can read the real error
+      # if the build fails again.
+      - name: Upload full build log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: buildozer-full-log
+          path: buildozer_full.log
+          if-no-files-found: warn
+
+      - name: Upload APK
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: WalkLearn-APK
+          path: bin/*.apk
+          if-no-files-found: warn
