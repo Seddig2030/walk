@@ -43,10 +43,10 @@ jobs:
             cmake libffi-dev libssl-dev \
             libltdl-dev gettext
 
-      - name: Install Buildozer, Cython, and pinned python-for-android
+      - name: Install Buildozer and Cython
         run: |
           python3 -m pip install --upgrade pip setuptools wheel
-          python3 -m pip install "cython==0.29.33" buildozer "python-for-android==2024.1.21"
+          python3 -m pip install "cython==0.29.33" buildozer
 
       - name: Build APK with Buildozer
         shell: bash
