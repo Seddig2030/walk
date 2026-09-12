@@ -18,6 +18,17 @@ jobs:
         with:
           python-version: '3.10'
 
+      # The Ubuntu runner ships with several JDKs pre-installed and JAVA_HOME
+      # already pointing at Java 11. Installing openjdk-17 via apt does NOT
+      # change JAVA_HOME, so Gradle keeps using Java 11 and refuses to run
+      # (the Android Gradle plugin requires 17+). setup-java fixes JAVA_HOME
+      # properly for every step after it.
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
       # Ubuntu runners ship with a pre-installed Android SDK/NDK whose paths
       # get exported as env vars. Buildozer/python-for-android then tries to
       # reuse that SDK instead of the one it downloads itself, and version
@@ -35,7 +46,6 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y \
             git zip unzip curl \
-            openjdk-17-jdk \
             python3-pip python3-setuptools python3-dev \
             build-essential \
             autoconf automake libtool libtool-bin m4 pkg-config \
