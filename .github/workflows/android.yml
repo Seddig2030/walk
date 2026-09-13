@@ -61,8 +61,13 @@ jobs:
       - name: Build APK with Buildozer
         shell: bash
         run: |
-          set -o pipefail
           yes | buildozer -v android debug 2>&1 | tee buildozer_full.log
+          buildozer_status=${PIPESTATUS[1]}
+          if [ "$buildozer_status" -ne 0 ]; then
+            echo "❌ buildozer itself exited with status $buildozer_status"
+            exit "$buildozer_status"
+          fi
+          echo "✅ buildozer exited successfully"
 
       - name: Verify an APK was actually produced
         run: |
