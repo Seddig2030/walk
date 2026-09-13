@@ -5,30 +5,22 @@ package.domain = org.walklearn
 source.dir = .
 source.include_exts = py,json,ttf,png,svg
 version = 4.0.0
-requirements = python3,kivy==2.3.0,pyjnius,arabic-reshaper,python-bidi
+requirements = python3,kivy,pyjnius,arabic-reshaper,python-bidi
 orientation = portrait
 fullscreen = 0
 icon.filename = %(source.dir)s/icon.png
 
-# Pins python-for-android itself to the release that shipped alongside
-# Kivy 2.3.0 and still defaults to building Python 3.11 for the device
-# (this combo already produced a successful build). Newer p4a checkouts
-# default to Python 3.14, which Kivy 2.3.0's C code does not compile
-# against yet.
-p4a.branch = v2024.01.21
+# Pin python-for-android to a known-stable release instead of master.
+# This avoids picking up half-tested changes that can produce an APK
+# which "builds successfully" but Android refuses to install.
+p4a.branch = release-2024.01.21
 
 [buildozer]
 log_level = 2
 warn_on_root = 1
 
 [android]
-# android.api controls targetSdkVersion. Google Play Protect (and some
-# OEM security layers) block installing apps whose targetSdk is more than
-# ~2 levels behind the newest Android release — this is what caused
-# "App not installed" / "Unsafe app blocked" on every device tested.
-# (The SDK platform itself is fetched fresh by buildozer regardless of
-# the p4a version above, so raising this is independent of that pin.)
-android.api = 35
+android.api = 33
 android.minapi = 24
 android.ndk = 25b
 android.archs = arm64-v8a, armeabi-v7a
